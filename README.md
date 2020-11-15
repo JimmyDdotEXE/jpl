@@ -82,7 +82,7 @@ Assuming no errors in the JPL code of a file `example.jpl`, executing `jpl examp
 
 JPL is strict about indentation. Make sure to indent the body of statements and to use tabs for the indentations.
 
-Refer to the [docs](https://github.com/JimmyDdotEXE/jpl/tree/master/docs) for examples of the features available in JPL.
+Refer to the [docs](https://github.com/JimmyDdotEXE/jpl/tree/main/docs) for examples of the features available in JPL.
 
 ## To-Do List
 
