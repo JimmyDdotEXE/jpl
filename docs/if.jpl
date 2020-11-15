@@ -1,0 +1,34 @@
+#jpl has if, elseif, and else statements
+
+
+
+
+#if statements take a cond value
+#the body of the if statement is executed if its cond value is True
+if True:
+	print 0
+
+
+
+
+#if statements can be followed by an else statement
+#the else statement's body is executed when the if's cond value is False
+if False:
+	print "from the if"
+else:
+	print "from the else"
+
+
+
+
+#elseif statements can be placed between an if statement and an else statement
+#any number of elseif statements can be listed in a row
+#an elseif statement's body is executed when all previous if and elseif cond values are False and it's cond value is True
+if 4 > 5:
+	print "from the if"
+elseif False:
+	print "from the first elseif"
+elseif 2 == 2:
+	print "from the second elseif"
+else:
+	print "from the else"

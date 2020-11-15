@@ -1,0 +1,13 @@
+#JPL has 2 text types, char and string
+
+char c = 'a'	#chars represent a single character and takes 1 byte of memory
+char e = '\n'	#chars such as newline can be escaped
+
+string s = "turtles"	#strings are a collection of chars
+
+
+
+
+#JPL has string concatenation that combines text values into a string value
+
+string concat = "turtles" + ' ' + "are" + ' ' + "cool" #results is the value "turtles are cool"

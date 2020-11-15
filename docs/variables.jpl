@@ -1,0 +1,16 @@
+#JPL variables are strictly typed
+#variables can have type byte, short, int, long, decimal, bool, char, or text
+
+
+
+
+#variable declarations need a type and a name
+int x	#variables auto-initialize to a base value at declaration. x has value 0 here
+
+int y = 5	#variables can be initialized at declaration. y has value 5 here
+
+
+
+
+#variables that have previously been declared can be referenced by name
+x = y + 1	#x now has value 6

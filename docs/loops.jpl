@@ -1,0 +1,49 @@
+#jpl has two types of loops know as for-loops and while-loops
+
+
+
+
+print "First for-loop example"
+
+#for-loops take a Num value and iterate from 0 to the given number
+for 5:
+	#loop is a variable within the scope of the for-loop that acts as the iterator for that loop
+	print loop
+
+
+print "Second for-loop example"
+
+#for-loops are nestable
+for 3:
+	print ""
+
+	for 3:
+		#and loop is always the iterator for the most recent loop
+		print loop
+
+
+
+
+print "First while-loop example"
+int i = 0
+
+#while-loops take a Cond value and continue to run while that value is true
+while i < 4:
+	print i
+	i += 1
+
+
+print "Second while-loop example"
+int x = 0
+
+#while-loops are also nestable
+while x < 3:
+	print ""
+
+	int y = 3
+
+	while y > 0:
+		print y
+		y -= 1
+
+	x += 1

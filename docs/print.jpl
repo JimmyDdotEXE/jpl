@@ -1,0 +1,25 @@
+#JPL offers a print statement to print values to the screen
+
+
+
+
+#string values can be printed
+print "Turtles are cool"
+
+
+
+
+#char values can be printed
+print 'a'
+
+
+
+
+#num values can be printed
+print 5 + 10
+
+
+
+
+#cond values can be printed
+print True
