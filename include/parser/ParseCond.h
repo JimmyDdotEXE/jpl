@@ -8,6 +8,6 @@
 
 Cond *parseCondDeclaration(std::vector<std::string> in);
 
-Cond *parseCond(std::vector<std::string> in);
+Cond *parseCond(std::vector<std::string> in, bool guaranteedCond=true, bool tryVar=true);
 
 #endif

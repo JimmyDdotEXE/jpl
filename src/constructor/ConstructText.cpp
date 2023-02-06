@@ -1,6 +1,8 @@
 #include <iostream>
 #include "value/Concatenation.h"
+#include "parser/Parser.h"
 #include "constructor/Constructor.h"
+#include "constructor/ConstructFunction.h"
 #include "constructor/ConstructText.h"
 
 
@@ -47,15 +49,29 @@ std::string constructConcatenation(Concatenation *in){
 */
 std::string constructString(String *in){
 
+	bool externalGlobal = (in->getMutator() & mut_GLOBAL) && (in->getFile() != currentFile);
+
+
+	std::string mutators = "";
+
+	if(in->getMutator() & mut_STATIC){
+		mutators += "static ";
+	}
+
+	if(in->getMutator() & mut_CONST){
+		mutators += "const ";
+	}
+
+
 	if(Concatenation *t = dynamic_cast<Concatenation *>(in)){
 		return constructConcatenation(t);
 	}else{
 		if(in->isVar()){
-			if(checkScope(in)){
+			if(checkScope(in) || externalGlobal){
 				return in->getName();
 			}else{
 				addToScope(in);
-				return in->getType() + " " + in->getName();
+				return mutators + in->getType() + " " + in->getName();
 			}
 		}else{
 			return "\"" + in->getValue() + "\"";
@@ -71,12 +87,27 @@ std::string constructString(String *in){
 	returns a std::string
 */
 std::string constructChar(Char *in){
+
+	bool externalGlobal = (in->getMutator() & mut_GLOBAL) && (in->getFile() != currentFile);
+
+
+	std::string mutators = "";
+
+	if(in->getMutator() & mut_STATIC){
+		mutators += "static ";
+	}
+
+	if(in->getMutator() & mut_CONST){
+		mutators += "const ";
+	}
+
+
 	if(in->isVar()){
-		if(checkScope(in)){
+		if(checkScope(in) && externalGlobal){
 			return in->getName();
 		}else{
 			addToScope(in);
-			return in->getType() + " " + in->getName();
+			return mutators + in->getType() + " " + in->getName();
 		}
 	}else{
 		std::string ret = "";
@@ -103,7 +134,9 @@ std::string constructChar(Char *in){
 */
 std::string constructText(Text *in){
 
-	if(Char *t = dynamic_cast<Char *>(in)){
+	if(in->isFuncCall()){
+		return constructFunctionCall(in);
+	}else if(Char *t = dynamic_cast<Char *>(in)){
 		return constructChar(t);
 	}else if(String *t = dynamic_cast<String *>(in)){
 		return constructString(t);

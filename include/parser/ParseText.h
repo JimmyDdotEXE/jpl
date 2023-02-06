@@ -9,10 +9,10 @@
 
 Text *parseTextDeclaration(std::vector<std::string> in);
 
-String *parseString(std::vector<std::string> in);
+String *parseString(std::vector<std::string> in, bool guaranteedText=true, bool tryVar=true);
 
-Char *parseChar(std::vector<std::string> in);
+Char *parseChar(std::vector<std::string> in, bool guaranteedText=true, bool tryVar=true);
 
-Text *parseText(std::vector<std::string> in);
+Text *parseText(std::vector<std::string> in, bool guaranteedText=true, bool tryVar=true);
 
 #endif

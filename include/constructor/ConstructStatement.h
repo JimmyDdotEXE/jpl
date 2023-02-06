@@ -7,4 +7,8 @@
 
 std::string constructStatement(Statement *in);
 
+
+std::vector<std::string> constructGlobalDeclarations(std::vector<global_t> g);
+std::vector<std::string> constructGlobalDefinitions(std::vector<global_t> g);
+
 #endif

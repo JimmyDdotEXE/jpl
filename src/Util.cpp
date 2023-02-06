@@ -4,12 +4,7 @@
 #include "Util.h"
 
 
-/*
-	lower function
-	takes a std::string as parameters
-	converts all chars in parameter to lower-case
-	return a std::string
-*/
+/*takes a string and returns that string with all lower-case letters*/
 std::string lower(std::string s){
 	std::locale loc;
 	std::string ret = "";
@@ -22,12 +17,7 @@ std::string lower(std::string s){
 }
 
 
-/*
-	numeric function
-	takes a std::string as parameters
-	checks if parameter is a number
-	return a bool
-*/
+/*takes a string and returns true or false if it's a number*/
 bool numeric(std::string s){
 	std::locale loc;
 
@@ -50,12 +40,7 @@ bool numeric(std::string s){
 }
 
 
-/*
-	numString function
-	takes a long as parameters
-	converts the given long to a std::string
-	return a std::string
-*/
+/*takes a long and return it as a string*/
 std::string numString(long num){
 	std::ostringstream stream;
 	stream << num;
@@ -65,10 +50,9 @@ std::string numString(long num){
 
 
 /*
-	splitString function
 	takes a std::string and char as parameters
-	split the given string into substrings at each occurence of the given char
-	return a std::vector<std::string> containing all substrings
+	splits the given string into substrings at each occurence of the given char
+	returns a std::vector<std::string> containing all substrings
 */
 std::vector<std::string> splitString(std::string line, char c){
 	std::vector<std::string> ss;
@@ -184,4 +168,32 @@ std::vector<std::string> splitString(std::string line, char c){
 	}
 
 	return ss;
+}
+
+
+bool between(std::vector<pair_t> matches, int index, size_t pos){
+
+	for(int i=0;i<matches.size();i++){
+
+		if(index > matches.at(i).openStr && index < matches.at(i).closeStr){
+			return true;
+
+		}else if(index >= matches.at(i).openStr && index < matches.at(i).closeStr){
+			if(pos > matches.at(i).openPos){
+				return true;
+			}
+
+		}else if(index > matches.at(i).openStr && index <= matches.at(i).closeStr){
+			if(pos < matches.at(i).closePos){
+				return true;
+			}
+
+		}else if(index >= matches.at(i).openStr && index <= matches.at(i).closeStr){
+			if(pos > matches.at(i).openPos && pos < matches.at(i).closePos){
+				return true;
+			}
+		}
+	}
+
+	return false;
 }

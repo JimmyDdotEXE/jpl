@@ -1,0 +1,28 @@
+#JPL supports projects that span multiple files
+
+#This is the main file of this example and is supported by 'multifile_test_support.jpl'
+
+#Global variables can be declared in any file, including the main file
+#Those globals can then be accessed by other files
+global string mainGlobal = "global from the main file"
+
+
+#Global variables declared in other files can be accessed in any file
+#This global is declared in 'multifile_test_supprt.jpl'
+print supportGlobal
+
+
+#Functions can be declared in any file
+#Those functions can then be called in other files
+none HelloWorld():
+	print "Hello World!"
+
+	end
+
+
+#Functions declared in other files can be accessed in any file
+#This function is declared in 'multifile_test_supprt.jpl'
+PrintMainGlobal()
+
+#This function is also declared in 'multifile_test_supprt.jpl'
+CallHelloWorld()

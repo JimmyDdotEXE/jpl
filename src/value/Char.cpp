@@ -12,7 +12,12 @@ Char::Char(char c, bool esc){
 	escape = esc;
 }
 
-Char::Char(std::string s) : Text("char", s){
+Char::Char(std::string s, mutator m) : Text("char", s, m){
+	literal = false;
+	value = '\0';
+}
+
+Char::Char(std::string n, std::vector<Value *> p) : Text("char", n, p){
 	literal = false;
 	value = '\0';
 }

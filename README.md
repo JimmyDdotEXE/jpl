@@ -9,6 +9,10 @@ It is under fairly heavy development and may change drastically between versions
 Projects developed under one version are not guaranteed to work under another.
 Sorry about that. Hopefully guaranteed stability will be feasible in the future.
 
+## Wiki
+
+Documention for installation, usage, and language can all be found in the project's [wiki](https://github.com/JimmyDdotEXE/jpl/wiki).
+
 ## Installation
 
 1. **Prerequisites**

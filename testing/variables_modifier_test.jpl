@@ -1,0 +1,66 @@
+#JPL has three variable modifiers global, static, and const
+
+
+#a global variable is available in every scope
+global int counter = 0
+
+#counter is available here
+counter += 1
+
+none incrementCounter():
+	#counter is also available in the scope of this function
+	counter += 1
+
+	end
+
+incrementCounter()
+
+#counter is still availble in this scope
+print counter
+
+
+
+#a static variable is allocated for the lifetime of the program
+#meaning a static variable maintains it's value between scope changes
+
+int factHelper(int i):
+	#factHolder is initialized once and maintains it's value between function calls after that
+	static int factHolder = 1
+	factHolder = factHolder * i
+
+	factHolder
+
+
+int factorial(int i):
+	int ret
+	
+	for i:
+		ret = factHelper(i-loop)
+
+	ret
+
+
+print factorial(5)
+
+
+
+#a const variable can't be changed after declaration
+const decimal PI = 3.1415926
+
+#PI can be read, but cannot be modifier now
+print PI
+
+
+
+#variable modifiers can be used in conjunction
+global const decimal G = 9.81
+
+#G can be used in the main scope
+print G
+
+
+decimal verticalDistance(decimal initial, decimal time):
+	#G is also available in this scope, but it cannot be changed
+	initial*time - .5*G*time*time
+
+print verticalDistance(5, 2)

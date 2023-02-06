@@ -1,0 +1,44 @@
+#include <iostream>
+#include <string>
+
+
+int main(int argc, char *argv[]){
+	//JPL has five numeric types byte, short, int, long, and decimal.
+
+	signed char b = 1;	//byte is the smallest integer type at 1 byte of memory
+
+	short s = 2;	//short is the second smallest integer type at 2 bytes of memory
+
+	int i = 4;	//int is the second largest integer type at 4 bytes of memory
+
+	long l = 8;	//long is the largest integer type at 8 bytes of memory
+
+	double d = 8;	//decimal is the largest and only decimal type at 8 bytes of memory
+
+
+
+
+	//JPL has numeric equations including add, subtract, multiply, divide, and modulo operations.
+
+	int add = 1 + 2;	//add operation
+	int minus = 2 - 1;	//subtract operation
+
+	int multiply = 2 * 2;	//multiply operation
+	int divide = 4 / 2;	//divide operation
+
+	int remain = 11 % 5;	//modulo operation
+
+
+
+
+	//JPL has numeric grouping.
+
+	int group = (2 + 1) * 4;	//the numeric value in the parenthesis will be evaluated first resulting in value 12
+
+
+
+
+	//JPL has numeric negation.
+
+	int negative = -(2 + 2);	//this has value of -4
+}

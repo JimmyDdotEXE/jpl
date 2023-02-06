@@ -1,14 +1,157 @@
+#include <iostream>
+#include "Util.h"
+#include "statement/NoneCall.h"
 #include "statement/Print.h"
+#include "statement/Return.h"
 #include "statement/Assignment.h"
+#include "statement/Function.h"
 #include "value/Int.h"
 #include "value/Bool.h"
 #include "value/Char.h"
 #include "value/String.h"
+#include "parser/Parser.h"
 #include "parser/ParseNum.h"
 #include "parser/ParseCond.h"
 #include "parser/ParseText.h"
 #include "parser/ParseValue.h"
 #include "parser/ParseStatement.h"
+
+
+NoneCall *parseNoneCall(std::vector<std::string> in){
+	bool open = false;
+	int depth = 0;
+
+	Function *func;
+
+	std::string type;
+	std::string name;
+	std::vector<Value *> params;
+	std::vector<std::string> holder;
+
+	for(int i=0;i<in.size();i++){
+		size_t recent = 0;
+
+		while(1){
+			size_t openPos = in.at(i).find('(', recent);
+			size_t closePos = in.at(i).find(')', recent);
+			size_t commaPos = in.at(i).find(',', recent);
+
+			size_t pos = std::min(std::min(openPos, closePos), commaPos);
+
+			if(pos != std::string::npos){
+				if(pos == openPos){
+					if(!open){
+						if(in.at(i).length() == 1){
+							in.erase(in.begin()+i);
+							i--;
+							break;
+						}else if(in.at(i).substr(0, pos) == ""){
+							in.at(i) = in.at(i).substr(pos+1);
+						}else if(in.at(i).substr(pos+1) == ""){
+							in.at(i) = in.at(i).substr(0, pos);
+						}else{
+							in.insert(in.begin()+i+1, in.at(i).substr(pos+1));
+							in.at(i) = in.at(i).substr(0, pos);
+						}
+
+
+						func = lookupFunction(in.at(0));
+
+						if(func != NULL){
+							if(func->file != NULL){
+								type = func->getType();
+
+								if(type == "void"){
+									currentFile->addInclusion(func->file);
+
+									name = in.at(0);
+									open = true;
+									depth++;
+									break;
+								}else{
+									return NULL;
+								}
+							}else if(lookupVar(in.at(0)) == NULL){
+								std::cout << "Function " + in.at(0) + " undefined.\n";
+								throw std::exception();
+							}
+
+						}else if(lookupVar(in.at(0)) == NULL){
+							std::cout << "Function " + in.at(0) + " undefined.\n";
+							throw std::exception();
+						}
+					}
+
+					depth++;
+				}else if(pos == closePos){
+					if(open && depth == 1){
+						if(in.at(i).length() == 1){
+							in.erase(in.begin()+i);
+							i--;
+						}else if(in.at(i).substr(0, pos) == ""){
+							in.at(i) = in.at(i).substr(pos+1);
+							i--;
+						}else if(in.at(i).substr(pos+1) == ""){
+							in.at(i) = in.at(i).substr(0, pos);
+							holder.push_back(in.at(i));
+						}else{
+							in.insert(in.begin()+i+1, in.at(i).substr(pos+1));
+							in.at(i) = in.at(i).substr(0, pos);
+							holder.push_back(in.at(i));
+						}
+
+
+						if(Value *v = parseValue(holder)){
+							params.push_back(v);
+						}
+
+
+						std::vector<Value *> matchParams = func->getParameters();
+						for(int x=0;x<params.size() && x<matchParams.size();x++){
+							if(!typeCheck(params.at(x), matchParams.at(x))){
+								std::cout << "missmatched parameter types.\n";
+								throw std::exception();
+							}
+						}
+
+
+						return new NoneCall(name, params);
+					}
+
+					depth--;
+				}else if(pos == commaPos){
+					if(open && depth == 1){
+						if(in.at(i).length() == 1){
+							in.erase(in.begin()+i);
+							i--;
+						}else if(in.at(i).substr(0, pos) == ""){
+							in.at(i) = in.at(i).substr(pos+1);
+							i--;
+						}else if(in.at(i).substr(pos+1) == ""){
+							in.at(i) = in.at(i).substr(0, pos);
+							holder.push_back(in.at(i));
+						}else{
+							in.insert(in.begin()+i+1, in.at(i).substr(pos+1));
+							in.at(i) = in.at(i).substr(0, pos);
+							holder.push_back(in.at(i));
+						}
+
+						params.push_back(parseValue(holder));
+						holder.clear();
+						break;
+					}
+				}
+
+				recent = pos+1;
+			}else{
+				holder.push_back(in.at(i));
+				break;
+			}
+		}
+	}
+
+	return NULL;
+}
 
 
 /*
@@ -20,10 +163,12 @@
 Assignment *parseDeclarationStatement(std::vector<std::string> in){
 	Value *var;
 
-	int typeIndex = 0;
+	if(in.size() < 2){
+		return NULL;
+	}
 
-	if(in.size() == 3)
-		typeIndex = 1;
+	int typeIndex = in.size() - 2;
+
 
 	//parse a byte declaration
 	if(in.at(typeIndex) == "byte"){
@@ -87,14 +232,6 @@ Assignment *parseDeclarationStatement(std::vector<std::string> in){
 */
 Statement *parseStatement(std::vector<std::string> in){
 
-	//parse a print statement and return a Print pointer
-	if(in.size()){
-		if(in.at(0) == "print"){
-			in.erase(in.begin());
-			return new Print(parseValue(in));
-		}
-	}
-
 	//find any assignment ops and return Assignment pointer
 	for(int i=0;i<in.size();i++){
 		size_t eqPos = in.at(i).find("=");
@@ -145,9 +282,14 @@ Statement *parseStatement(std::vector<std::string> in){
 			rhs.insert(rhs.begin(), in.at(i).substr(pos+subExtra));
 		}
 
+
 		Value *var = parseVar(lhs);
-		if(!var){
+		if(var == NULL){
 			var = parseDeclarationVar(lhs);
+		}else if(var->getMutator() & mut_CONST){
+			std::cout << "Cannot reassign constant variable " << var->getName() << "." << std::endl;
+
+			throw std::exception();
 		}
 
 		Value *val = parseValue(rhs);
@@ -159,24 +301,84 @@ Statement *parseStatement(std::vector<std::string> in){
 			if(Num *l = dynamic_cast<Num *>(var)){
 				if(Num *r = dynamic_cast<Num *>(val)){
 					return new Assignment(op, var, val);
+				}else{
+
+					for(int j=0;j<rhs.size();j++){
+						std::cout << rhs.at(j) << " ";
+					}
+
+					std::cout << "in assignment ";
+
+					for(int j=0;j<in.size();j++){
+						std::cout << in.at(j) << " ";
+					}
+
+					std::cout << "doesn't have a numeric value." << std::endl;
+
+					throw std::exception();
 				}
 
 			//only Cond types can be assigned to Cond types
 			}else if(Cond *l = dynamic_cast<Cond *>(var)){
 				if(Cond *r = dynamic_cast<Cond *>(val)){
 					return new Assignment(op, var, val);
+				}else{
+
+					for(int j=0;j<rhs.size();j++){
+						std::cout << rhs.at(j) << " ";
+					}
+
+					std::cout << "in assignment ";
+
+					for(int j=0;j<in.size();j++){
+						std::cout << in.at(j) << " ";
+					}
+
+					std::cout << "doesn't have a cond value." << std::endl;
+
+					throw std::exception();
 				}
 
 			//only String types can be assigned to String types
 			}else if(String *l = dynamic_cast<String *>(var)){
 				if(String *r = dynamic_cast<String *>(val)){
 					return new Assignment(op, var, val);
+				}else{
+
+					for(int j=0;j<rhs.size();j++){
+						std::cout << rhs.at(j) << " ";
+					}
+
+					std::cout << "in assignment ";
+
+					for(int j=0;j<in.size();j++){
+						std::cout << in.at(j) << " ";
+					}
+
+					std::cout << "doesn't have a string value." << std::endl;
+
+					throw std::exception();
 				}
 
 			//only Char types can be assigned to Char types
 			}else if(Char *l = dynamic_cast<Char *>(var)){
 				if(Char *r = dynamic_cast<Char *>(val)){
 					return new Assignment(op, var, val);
+				}else{
+
+					for(int j=0;j<rhs.size();j++){
+						std::cout << rhs.at(j) << " ";
+					}
+
+					std::cout << "in assignment ";
+
+					for(int j=0;j<in.size();j++){
+						std::cout << in.at(j) << " ";
+					}
+
+					std::cout << "doesn't have a character value." << std::endl;
+
+					throw std::exception();
 				}
 			}
 
@@ -186,12 +388,42 @@ Statement *parseStatement(std::vector<std::string> in){
 			if(Num *l = dynamic_cast<Num *>(var)){
 				if(Num *r = dynamic_cast<Num *>(val)){
 					return new Assignment(op, var, val);
+				}else{
+
+					for(int j=0;j<rhs.size();j++){
+						std::cout << rhs.at(j) << " ";
+					}
+
+					std::cout << "in assignment ";
+
+					for(int j=0;j<in.size();j++){
+						std::cout << in.at(j) << " ";
+					}
+
+					std::cout << "doesn't have a numeric value." << std::endl;
+
+					throw std::exception();
 				}
 
 			//only Text types can be add assigned to String types
 			}else if(String *l = dynamic_cast<String *>(var)){
 				if(Text *r = dynamic_cast<Text *>(val)){
 					return new Assignment(op, var, val);
+				}else{
+
+					for(int j=0;j<rhs.size();j++){
+						std::cout << rhs.at(j) << " ";
+					}
+
+					std::cout << "in assignment ";
+
+					for(int j=0;j<in.size();j++){
+						std::cout << in.at(j) << " ";
+					}
+
+					std::cout << "doesn't have a text value." << std::endl;
+
+					throw std::exception();
 				}
 			}
 
@@ -201,19 +433,44 @@ Statement *parseStatement(std::vector<std::string> in){
 			if(Num *l = dynamic_cast<Num *>(var)){
 				if(Num *r = dynamic_cast<Num *>(val)){
 					return new Assignment(op, var, val);
+				}else{
+
+					for(int j=0;j<rhs.size();j++){
+						std::cout << rhs.at(j) << " ";
+					}
+
+					std::cout << "in assignment ";
+
+					for(int j=0;j<in.size();j++){
+						std::cout << in.at(j) << " ";
+					}
+
+					std::cout << "doesn't have a numeric value." << std::endl;
+
+					throw std::exception();
 				}
 			}
 		}
 
-
+		std::cout << "Something went wrong in parseStatement()" << std::endl;
 		throw std::exception();
 	}
 
 
-	//if the input is 2 strings long call parseDeclarationStatement()
-	if(in.size() == 2){
-		return parseDeclarationStatement(in);
+	//parse a print statement and return a Print pointer
+	if(in.size()){
+		if(in.at(0) == "print"){
+			in.erase(in.begin());
+			return new Print(parseValue(in));
+		}else if(NoneCall *call = parseNoneCall(in)){
+			return call;
+		}else if(in.at(0) == "end" && in.size() == 1){
+			return new Return(NULL);
+		}else if(Value *val = parseValue(in)){
+			return new Return(val);
+		}
 	}
 
-	return NULL;
+
+	return parseDeclarationStatement(in);
 }

@@ -1,0 +1,26 @@
+#this file declares global variables and functions to be used in 'multifile_test.jpl'
+
+
+#Globals can be declared in any file, including secondary files
+#Those globals can then be accessed by other files
+global string supportGlobal = "global from the support file"
+
+
+#Functions can be declared in any file
+none CallHelloWorld():
+
+	#Functions declared in other files can be called in any file
+	#The function is declared in 'multifile_test.jpl'
+	HelloWorld()
+
+	end
+
+
+#Functions can be called from within their file, or from other files in the project.
+none PrintMainGlobal():
+
+	#Global variables declared in other files can be accessed in any file
+	#This global is declared in 'multifile_test.jpl'
+	print mainGlobal
+
+	end

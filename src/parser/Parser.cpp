@@ -7,20 +7,124 @@
 #include "statement/If.h"
 #include "statement/While.h"
 #include "statement/For.h"
+#include "statement/Function.h"
+#include "statement/Return.h"
 #include "parser/ParseNum.h"
 #include "parser/ParseCond.h"
+#include "parser/ParseText.h"
 #include "parser/ParseStatement.h"
+#include "parser/ParseFunction.h"
 #include "parser/Parser.h"
 
 
-//collection of know types
-std::vector<std::string> types{"byte", "short", "int", "long", "decimal", "bool", "char", "string"};
+//collection of know global variables
+std::vector<Value *> globals;
 
 //collection of know variables in the current scope
 std::vector<Value *> vars;
 
+//collection of know functions in the current scope
+std::vector<Function *> functions;
+
 //count of how many for-loops deep the parser is running
 int loops = 0;
+
+
+bool nameCheck(std::string s){
+	for(int i=0;i<128;i++){
+		if(s.find(i) != std::string::npos){
+			std::cout << "invalid variable name \'" << s << "\'." << std::endl;
+			throw std::exception();
+		}
+
+		if(i == 47){
+			i = 57;
+		}else if(i == 64){
+			i = 90;
+		}else if(i == 94){
+			i = 95;
+		}else if(i == 96){
+			i = 122;
+		}
+	}
+
+	if(numeric(s.substr(0, 1))){
+		std::cout << "invalid variable name \'" << s << "\'." << std::endl;
+		throw std::exception();
+	}else if(std::find(reservedNames.begin(), reservedNames.end(), s) != reservedNames.end()){
+		std::vector<std::string>::iterator it = std::find(reservedNames.begin(), reservedNames.end(), s);
+
+		std::cout << "Name \'" << *it << "\' is reserved." << std::endl;
+		throw std::exception();
+	}else if(s == "loop"){
+		std::cout << "Name \'" << s << "\' is reserved." << std::endl;
+		throw std::exception();
+	}else if(size_t pos = s.find("loop") == 0){
+		if(numeric(s.substr(pos+4))){
+			std::cout << "Name \'" << s << "\' is reserved." << std::endl;
+			throw std::exception();
+		}
+	}
+
+	return true;
+}
+
+
+bool returnTypeCheck(Return *ret, Function *fun){
+	std::string type = fun->getType();
+
+	bool none = false;
+	bool cond = false;
+	bool num = false;
+	bool chr = false;
+	bool str = false;
+
+	if(type == "void"){
+		none = true;
+	}else if(type == "bool"){
+		cond = true;
+	}else if(type == "signed char" || type == "short" || type == "int" || type == "long" || type == "double"){
+		num = true;
+	}else if(type == "char"){
+		chr = true;
+	}else if(type == "std::string"){
+		str = true;
+	}
+
+	Value *val = ret->getValue();
+	if(val == NULL){
+		if(none){
+			return true;
+		}else{
+			return false;
+		}
+	}else if(dynamic_cast<Num *>(val) && num){
+		return true;
+	}else if(dynamic_cast<Cond *>(val) && cond){
+		return true;
+	}else if(dynamic_cast<Char *>(val) && chr){
+		return true;
+	}else if(dynamic_cast<String *>(val) && str){
+		return true;
+	}
+
+	return false;
+}
+
+
+bool typeCheck(Value *v1, Value *v2){
+	if(dynamic_cast<Num *>(v1) && dynamic_cast<Num *>(v2)){
+		return true;
+	}else if(dynamic_cast<Cond *>(v1) && dynamic_cast<Cond *>(v2)){
+		return true;
+	}else if(dynamic_cast<Char *>(v1) && dynamic_cast<Char *>(v2)){
+		return true;
+	}else if(dynamic_cast<String *>(v1) && dynamic_cast<String *>(v2)){
+		return true;
+	}
+
+	return false;
+}
 
 
 /*
@@ -38,6 +142,17 @@ bool lookupType(std::string type){
 }
 
 
+bool setScope(std::vector<Value *> in){
+	vars = in;
+	return true;
+}
+
+bool clearScope(){
+	vars.clear();
+	return true;
+}
+
+
 /*
 	addVar function
 	takes a Value pointer as parameter
@@ -45,7 +160,11 @@ bool lookupType(std::string type){
 	returns a bool
 */
 bool addVar(Value *var){
-	vars.push_back(var);
+	if(var->getMutator() & mut_GLOBAL){
+		globals.push_back(var);
+	}else{
+		vars.push_back(var);
+	}
 
 	return true;
 }
@@ -72,6 +191,33 @@ Value *lookupVar(std::string var){
 	for(int i=0;i < vars.size();i++){
 		if(vars.at(i)->getName() == var){
 			return vars.at(i);
+		}
+	}
+
+	//search global variables front to back for a variable with matching name
+	for(int i=0;i < globals.size();i++){
+		if(globals.at(i)->getName() == var){
+			if(!(globals.at(i)->getMutator() & mut_STATIC) || globals.at(i)->getFile() == currentFile){
+				return globals.at(i);
+			}
+		}
+	}
+
+	return NULL;
+}
+
+
+/*
+	lookupFunction function
+	takes a string as parameter
+	searchs funcs vector for a function with a name that matches the parameter
+	returns a Function pointer
+*/
+Function *lookupFunction(std::string n){
+	//search scope front to back for a function with a matching name
+	for(int i=0;i < functions.size();i++){
+		if(functions.at(i)->getName() == n){
+			return functions.at(i);
 		}
 	}
 
@@ -110,13 +256,7 @@ int countExtraLines(std::vector<line_t> lines){
 
 
 
-/*
-	parser function
-	takes a std::vector<std::string> and an int as parameters
-	breaks down lines of incoming code and constructs line structures of abstract code
-	returns a vector of line structures
-*/
-std::vector<line_t> parser(std::vector<std::string> input, int depth){
+std::vector<line_t> parseLines(std::vector<std::string> input, int depth){
 	//make a backup of the scope of variables right at the start of the parser
 	std::vector<Value *> oldScope(vars.size());
 	std::copy(vars.begin(), vars.end(), oldScope.begin());
@@ -154,9 +294,10 @@ std::vector<line_t> parser(std::vector<std::string> input, int depth){
 		std::vector<std::string> ss;
 
 		//if there were any strings resulting from the last split
-		if(temp.size())
+		if(temp.size()){
 			//split the first string again by spaces this time
 			ss = splitString(temp.at(0), ' ');
+		}
 
 		/*
 		 * due to how these two calls to splitString() are used,
@@ -213,7 +354,7 @@ std::vector<line_t> parser(std::vector<std::string> input, int depth){
 			if(lhs.at(0) == "if"){
 				lhs.erase(lhs.begin());
 
-				If *tmp = new If(parseCond(lhs), parser(body, depth+1));
+				If *tmp = new If(parseCond(lhs), parseLines(body, depth+1));
 				j += countExtraLines(tmp->getBody());
 				ln.stmt = tmp;
 
@@ -222,7 +363,7 @@ std::vector<line_t> parser(std::vector<std::string> input, int depth){
 				if(If *stmt = dynamic_cast<If *>(ret.back().stmt)){
 					lhs.erase(lhs.begin());
 
-					If *tmp = new If(parseCond(lhs), parser(body, depth+1));
+					If *tmp = new If(parseCond(lhs), parseLines(body, depth+1));
 					j += countExtraLines(tmp->getBody());
 					ln.stmt = tmp;
 					stmt->setElse(tmp);
@@ -233,7 +374,7 @@ std::vector<line_t> parser(std::vector<std::string> input, int depth){
 				if(If *stmt = dynamic_cast<If *>(ret.back().stmt)){
 					lhs.erase(lhs.begin());
 
-					If *tmp = new If(new Bool(true), parser(body, depth+1));
+					If *tmp = new If(new Bool(true), parseLines(body, depth+1));
 					j += countExtraLines(tmp->getBody());
 					ln.stmt = tmp;
 					stmt->setElse(tmp);
@@ -243,7 +384,7 @@ std::vector<line_t> parser(std::vector<std::string> input, int depth){
 			}else if(lhs.at(0) == "while"){
 				lhs.erase(lhs.begin());
 
-				While *tmp = new While(parseCond(lhs), parser(body, depth+1));
+				While *tmp = new While(parseCond(lhs), parseLines(body, depth+1));
 				j += countExtraLines(tmp->getBody());
 				ln.stmt = tmp;
 
@@ -254,7 +395,7 @@ std::vector<line_t> parser(std::vector<std::string> input, int depth){
 				loops++;
 				vars.push_back(new Int("loop" + numString(loops)));
 
-				For *tmp = new For(parseNum(lhs), parser(body, depth+1));
+				For *tmp = new For(parseNum(lhs), parseLines(body, depth+1));
 				tmp->setVar(vars.back());
 				j += countExtraLines(tmp->getBody());
 				ln.stmt = tmp;
@@ -265,8 +406,9 @@ std::vector<line_t> parser(std::vector<std::string> input, int depth){
 		}
 
 		//if no statement has been found make a call to parseStatement()
-		if(!ln.stmt)
+		if(!ln.stmt){
 			ln.stmt = parseStatement(ss);
+		}
 
 		liveLine = ln.stmt;
 
@@ -281,4 +423,69 @@ std::vector<line_t> parser(std::vector<std::string> input, int depth){
 	}
 
 	return ret;
+}
+
+bool parser(std::vector<File *> files){
+	for(int i=0;i<files.size();i++){
+		std::vector<Function *> funcs = files.at(i)->getFunctions();
+
+		for(int j=0;j<funcs.size();j++){
+			funcs.at(j)->file = files.at(i);
+			functions.push_back(funcs.at(j));
+		}
+	}
+
+
+	for(int i=0;i<files.size();i++){
+		currentFile = files.at(i);
+		std::vector<Function *> funcs = currentFile->getFunctions();
+
+		for(int j=0;j<funcs.size();j++){
+
+			setScope(funcs.at(j)->getParameters());
+			funcs.at(j)->setBody(parseLines(funcs.at(j)->getTemp(), 1));
+			clearScope();
+		}
+
+		for(int j=0;j<funcs.size();j++){
+			std::vector<line_t> lines = funcs.at(j)->getBody();
+			bool guaranteedReturn = false;
+
+			for(int k=0;k<lines.size();k++){
+				if(Return *stmt = dynamic_cast<Return *>(lines.at(k).stmt)){
+					if(!returnTypeCheck(stmt, funcs.at(j))){
+						std::cout << "Function " << funcs.at(j)->getName() << " missmatched return type.\n";
+					}else if(lines.at(k).tabDepth == 1){
+						guaranteedReturn = true;
+					}
+				}else if(While *stmt = dynamic_cast<While *>(lines.at(k).stmt)){
+					std::vector<line_t> body = stmt->getBody();
+					lines.insert(lines.end(), body.begin(), body.end());
+				}else if(For *stmt = dynamic_cast<For *>(lines.at(k).stmt)){
+					std::vector<line_t> body = stmt->getBody();
+					lines.insert(lines.end(), body.begin(), body.end());
+				}else if(If *stmt = dynamic_cast<If *>(lines.at(k).stmt)){
+					std::vector<line_t> body = stmt->getBody();
+					lines.insert(lines.end(), body.begin(), body.end());
+
+					while(stmt->getElse()){
+						stmt = stmt->getElse();
+
+						body = stmt->getBody();
+						lines.insert(lines.end(), body.begin(), body.end());
+					}
+				}
+			}
+
+			if(!guaranteedReturn && funcs.at(j)->getType() != "none"){
+				std::cout << "Function " << funcs.at(j)->getName() << " lacks guaranteed return.\n";
+			}
+		}
+
+		if(i == 0){
+			currentFile->setLines(parseLines(currentFile->getHolder()));
+		}
+	}
+
+	return true;
 }

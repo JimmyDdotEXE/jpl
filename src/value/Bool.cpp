@@ -11,7 +11,12 @@ Bool::Bool(bool v){
 	value = v;
 }
 
-Bool::Bool(std::string s) : Cond("bool", s){
+Bool::Bool(std::string s, mutator m) : Cond("bool", s, m){
+	literal = false;
+	value = false;
+}
+
+Bool::Bool(std::string n, std::vector<Value *> p) : Cond("bool", n, p){
 	literal = false;
 	value = false;
 }

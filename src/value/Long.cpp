@@ -11,7 +11,12 @@ Long::Long(long v){
 	value = v;
 }
 
-Long::Long(std::string s) : Num("long", s){
+Long::Long(std::string s, mutator m) : Num("long", s, m){
+	literal = false;
+	value = 0;
+}
+
+Long::Long(std::string n, std::vector<Value *> p) : Num("long", n, p){
 	literal = false;
 	value = 0;
 }

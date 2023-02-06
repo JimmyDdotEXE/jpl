@@ -3,11 +3,14 @@
 #include "value/Logic.h"
 #include "value/Group.h"
 #include "value/Negation.h"
+#include "parser/Parser.h"
 #include "constructor/Constructor.h"
+#include "constructor/ConstructFunction.h"
 #include "constructor/ConstructValue.h"
 #include "constructor/ConstructNum.h"
 #include "constructor/ConstructCond.h"
 #include <iostream>
+
 
 /*
 	constructLogic function
@@ -89,7 +92,23 @@ std::string constructComparison(Comparison *in){
 */
 std::string constructCond(Cond *in){
 
-	if(Logic *c = dynamic_cast<Logic *>(in)){
+	bool externalGlobal = (in->getMutator() & mut_GLOBAL) && (in->getFile() != currentFile);
+
+
+	std::string mutators = "";
+
+	if(in->getMutator() & mut_STATIC){
+		mutators += "static ";
+	}
+
+	if(in->getMutator() & mut_CONST){
+		mutators += "const ";
+	}
+
+
+	if(in->isFuncCall()){
+		return constructFunctionCall(in);
+	}else if(Logic *c = dynamic_cast<Logic *>(in)){
 		return constructLogic(c);
 	}else if(Comparison *c = dynamic_cast<Comparison *>(in)){
 		return constructComparison(c);
@@ -99,11 +118,11 @@ std::string constructCond(Cond *in){
 		return "!" + constructCond(c->getCond());
 	}else if(Bool *c = dynamic_cast<Bool *>(in)){
 		if(c->isVar()){
-			if(checkScope(c)){
+			if(checkScope(c) || externalGlobal){
 				return c->getName();
 			}else{
 				addToScope(c);
-				return c->getType() + " " + c->getName();
+				return mutators + c->getType() + " " + c->getName();
 			}
 		}else if(c->getValue()){
 			return "true";

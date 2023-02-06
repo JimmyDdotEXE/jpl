@@ -11,7 +11,12 @@ String::String(const char *s){
 	value = std::string(s);
 }
 
-String::String(std::string n) : Text("std::string", n){
+String::String(std::string n, mutator m) : Text("std::string", n, m){
+	literal = false;
+	value = "";
+}
+
+String::String(std::string n, std::vector<Value *> p) : Text("std::string", n, p){
 	literal = false;
 	value = "";
 }

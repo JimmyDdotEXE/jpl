@@ -1,0 +1,13 @@
+#global int string = 5
+
+none test():
+	print "test"
+
+	end
+
+#comment
+print fib(6)
+string s = "test"
+
+#int x = 4 + s
+test()
