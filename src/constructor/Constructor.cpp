@@ -370,7 +370,7 @@ std::vector<File *> constructor(std::vector<File *> files){
 		currentFile->setHolder(src);
 
 		if(header.size() != 0){
-			File *f = new File(currentFile->getName());
+			File *f = new File(currentFile->getPath() + "/" + currentFile->getName());
 
 			f->setHolder(header);
 

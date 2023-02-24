@@ -7,7 +7,12 @@
 File::File(std::string s){
 	size_t pos = s.find_last_of("/\\");
 
-	path = s.substr(0, pos);
+	if(pos != std::string::npos){
+		path = s.substr(0, pos);
+	}else{
+		path = ".";
+	}
+
 	name = s.substr(pos+1);
 }
 
